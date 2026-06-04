@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VulnShield Sandbox - Educational Vulnerability Lab</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">🛡️</div>
+      <div class="logo-text">
+        <h1>VulnShield Sandbox</h1>
+        <span>Security Lab v1.0</span>
+      </div>
+    </div>
+
+    <div class="mode-toggle-bar">
+      <button id="btn-vuln-mode" class="mode-btn active vuln-mode" onclick="setProtectionMode('vuln')">
+        ⚠️ Vulnerable Mode
+      </button>
+      <button id="btn-secure-mode" class="mode-btn secure-mode" onclick="setProtectionMode('secure')">
+        🔒 Secure Mode
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="sidebar">
+      <div class="sidebar-heading">Exploit Categories</div>
+      <button class="nav-item active" onclick="switchTab('xss')">
+        <span class="nav-item-icon">⚡</span> Reflected XSS
+      </button>
+      <button class="nav-item" onclick="switchTab('sqli')">
+        <span class="nav-item-icon">💾</span> SQL Injection (SQLi)
+      </button>
+      <button class="nav-item" onclick="switchTab('cmd')">
+        <span class="nav-item-icon">💻</span> Command Injection
+      </button>
+      <button class="nav-item" onclick="switchTab('path')">
+        <span class="nav-item-icon">📂</span> Path Traversal / LFI
+      </button>
+      <button class="nav-item" onclick="switchTab('dep')">
+        <span class="nav-item-icon">📦</span> Dependency Pollution
+      </button>
+    </aside>
+
+    <section class="content-area">
+
+      <!-- ========================================== -->
+      <!-- 1. Reflected XSS Section -->
+      <!-- ========================================== -->
+      <div id="tab-xss" class="tab-content active">
+        <div class="card">
+          <span id="badge-xss" class="vuln-badge vuln">Vulnerable</span>
+          <h2>Reflected XSS (Cross-Site Scripting)</h2>
+          <p class="description">
+            Reflected XSS occurs when an application receives input in an HTTP request and includes that data within the immediate response in an unsafe way, without proper sanitization or encoding.
+          </p>
+
+          <div class="interactive-panel">
+            <div class="input-panel">
+              <div class="form-group">
+                <label class="form-label" for="xss-input">Enter User Name</label>
+                <input type="text" id="xss-input" class="form-input" placeholder="e.g. Guest" value="<img src=x onerror=alert('Reflected-XSS')>">
+              </div>
+              <button class="btn btn-primary" onclick="runXss()">Test Request</button>
+
+              <div class="hints-container">
+                <div class="hint-title">💡 Exploit Payload Hints</div>
+                <div class="hint-text">
+                  Try inputs containing script commands or handler attributes:
+                  <br><code>&lt;img src=x onerror=alert(document.cookie)&gt;</code>
+                  <br><code>&lt;script&gt;alert('Hello!')&lt;/script&gt;</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="output-panel">
+              <div class="output-header">
+                <div class="output-title">Client Display Output</div>
+                <div id="indicator-xss" class="output-indicator active"></div>
+              </div>
+              <!-- This container will display the raw rendering to demo the injection execution -->
+              <div id="output-xss-render" class="output-content output-raw-html"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card code-comparison-card">
+          <h2>Code Comparison</h2>
+          <p class="description">Comparing how parameters are handled inside the Express endpoint router.</p>
+          <div class="comparison-grid">
+            <div class="code-box">
+              <div class="code-box-header vuln">🚨 Vulnerable Code (Express)</div>
+              <pre>app.get('/api/xss/vuln', (req, res) => {
+  const name = req.query.name || 'Guest';
+  // Send HTML back directly containing the unescaped query parameter
+  res.send(`&lt;span&gt;Hello, ${name}! Welcome back.&lt;/span&gt;`);
+});</pre>
+            </div>
+            <div class="code-box">
+              <div class="code-box-header secure">🛡️ Secure Code (HTML Escaping)</div>
+              <pre>app.get('/api/xss/secure', (req, res) => {
+  const name = req.query.name || 'Guest';
+  // Replace HTML special characters with safe entity encodings
+  const escapedName = name
+    .replace(/&/g, "&amp;amp;")
+    .replace(/&lt;/g, "&amp;lt;")
+    .replace(/&gt;/g, "&amp;gt;")
+    .replace(/"/g, "&amp;quot;")
+    .replace(/'/g, "&amp;#039;");
+  res.send(`&lt;span&gt;Hello, ${escapedName}! Welcome back.&lt;/span&gt;`);
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 2. SQL Injection Section -->
+      <!-- ========================================== -->
+      <div id="tab-sqli" class="tab-content">
+        <div class="card">
+          <span id="badge-sqli" class="vuln-badge vuln">Vulnerable</span>
+          <h2>SQL Injection (SQLi)</h2>
+          <p class="description">
+            SQL Injection allows attackers to interfere with queries made to a backend database. Users can execute arbitrary statements that bypass access control logic, access sensitive records, or modify databases.
+          </p>
+
+          <div class="interactive-panel">
+            <div class="input-panel">
+              <div class="form-group">
+                <label class="form-label" for="sqli-input">Filter Category</label>
+                <input type="text" id="sqli-input" class="form-input" placeholder="e.g. Security" value="' OR '1'='1">
+              </div>
+              <button class="btn btn-primary" onclick="runSqli()">Search Category</button>
+
+              <div class="hints-container">
+                <div class="hint-title">💡 Exploit Payload Hints</div>
+                <div class="hint-text">
+                  Force the query logic to evaluate to true for all rows:
+                  <br><code>' OR '1'='1</code>
+                  <br><br>
+                  Or perform a UNION injection to pull records from the internal <b>users</b> credentials schema:
+                  <br><code>' UNION SELECT username, role, secret_token FROM users --</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="output-panel">
+              <div class="output-header">
+                <div class="output-title">Database Results</div>
+                <div id="indicator-sqli" class="output-indicator"></div>
+              </div>
+              <div class="output-content">
+                <div id="query-sqli-run" class="query-display">Query: Waiting...</div>
+                <div id="output-sqli-table">No records loaded.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card code-comparison-card">
+          <h2>Code Comparison</h2>
+          <p class="description">Comparing database queries: Concatenating strings vs Parameterized bindings.</p>
+          <div class="comparison-grid">
+            <div class="code-box">
+              <div class="code-box-header vuln">🚨 Vulnerable Code (SQLite)</div>
+              <pre>app.get('/api/sqli/vuln', (req, res) => {
+  const category = req.query.category || '';
+  // Directly appending strings breaks query separation boundaries
+  const query = `SELECT name, category, price 
+                 FROM products 
+                 WHERE category = '${category}'`;
+
+  db.all(query, [], (err, rows) => {
+    res.json({ results: rows, query });
+  });
+});</pre>
+            </div>
+            <div class="code-box">
+              <div class="code-box-header secure">🛡️ Secure Code (Parameterized Queries)</div>
+              <pre>app.get('/api/sqli/secure', (req, res) => {
+  const category = req.query.category || '';
+  // Using parameters (?) isolates variables from syntax definitions
+  const query = `SELECT name, category, price 
+                 FROM products 
+                 WHERE category = ?`;
+
+  db.all(query, [category], (err, rows) => {
+    res.json({ results: rows, query });
+  });
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 3. Command Injection Section -->
+      <!-- ========================================== -->
+      <div id="tab-cmd" class="tab-content">
+        <div class="card">
+          <span id="badge-cmd" class="vuln-badge vuln">Vulnerable</span>
+          <h2>Command Injection</h2>
+          <p class="description">
+            Command Injection allows an attacker to execute arbitrary system shell commands on the host operating system. This happens when inputs are passed into system runners (like Node's <code>exec</code>) without validation.
+          </p>
+
+          <div class="interactive-panel">
+            <div class="input-panel">
+              <div class="form-group">
+                <label class="form-label" for="cmd-input">Enter Target Host (Ping Test)</label>
+                <input type="text" id="cmd-input" class="form-input" placeholder="e.g. 127.0.0.1" value="127.0.0.1 & dir">
+              </div>
+              <button class="btn btn-primary" onclick="runCmd()">Run Ping Test</button>
+
+              <div class="hints-container">
+                <div class="hint-title">💡 Exploit Payload Hints</div>
+                <div class="hint-text">
+                  Chain a second system command using shell separator operators:
+                  <br>Windows shell: <code>127.0.0.1 & dir</code> or <code>127.0.0.1 & type index.js</code>
+                  <br>Unix shell: <code>127.0.0.1 ; ls -la</code> or <code>127.0.0.1 ; cat index.js</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="output-panel">
+              <div class="output-header">
+                <div class="output-title">Shell Console Log</div>
+                <div id="indicator-cmd" class="output-indicator"></div>
+              </div>
+              <div class="output-content">
+                <div id="query-cmd-run" class="query-display">Command: Waiting...</div>
+                <pre id="output-cmd" style="white-space: pre-wrap; font-size: 0.8rem;">Ready to execute command...</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card code-comparison-card">
+          <h2>Code Comparison</h2>
+          <p class="description">Validating input strings before executing command subprocesses.</p>
+          <div class="comparison-grid">
+            <div class="code-box">
+              <div class="code-box-header vuln">🚨 Vulnerable Code (Node Child Process)</div>
+              <pre>app.post('/api/cmd/vuln', (req, res) => {
+  const ip = req.body.ip || '127.0.0.1';
+  // Runs direct string inside OS default shell environment
+  const pingCmd = `ping -n 2 ${ip}`;
+
+  exec(pingCmd, (err, stdout, stderr) => {
+    res.json({ command: pingCmd, output: stdout || stderr });
+  });
+});</pre>
+            </div>
+            <div class="code-box">
+              <div class="code-box-header secure">🛡️ Secure Code (Strict Regex & Shell Isolation)</div>
+              <pre>app.post('/api/cmd/secure', (req, res) => {
+  const ip = req.body.ip || '127.0.0.1';
+  
+  // 1. Strict regex sanitizes allowed characters
+  const ipRegex = /^[a-zA-Z0-9.-]+$/;
+  if (!ipRegex.test(ip)) {
+    return res.json({ output: 'Error: Invalid input.' });
+  }
+
+  // 2. Ideal: Avoid shell expansion entirely with execFile
+  // Alternative: safe execution of validated string
+  const pingCmd = `ping -n 2 ${ip}`;
+  exec(pingCmd, (err, stdout, stderr) => {
+    res.json({ command: pingCmd, output: stdout || stderr });
+  });
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 4. Path Traversal Section -->
+      <!-- ========================================== -->
+      <div id="tab-path" class="tab-content">
+        <div class="card">
+          <span id="badge-path" class="vuln-badge vuln">Vulnerable</span>
+          <h2>Path Traversal / Local File Inclusion (LFI)</h2>
+          <p class="description">
+            Path Traversal vulnerabilities occur when user input is passed directly to file read systems. An attacker can modify parameters to access files outside the intended directories using relative paths (e.g. <code>../</code>).
+          </p>
+
+          <div class="interactive-panel">
+            <div class="input-panel">
+              <div class="form-group">
+                <label class="form-label" for="path-input">Log Filename</label>
+                <input type="text" id="path-input" class="form-input" placeholder="e.g. system.log" value="../secret_flag.txt">
+              </div>
+              <button class="btn btn-primary" onclick="runPath()">Read Log File</button>
+
+              <div class="hints-container">
+                <div class="hint-title">💡 Exploit Payload Hints</div>
+                <div class="hint-text">
+                  Navigate out of the logs subdirectory directory to find sensitive files:
+                  <br><code>../secret_flag.txt</code>
+                  <br><code>../package.json</code>
+                  <br><code>../index.js</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="output-panel">
+              <div class="output-header">
+                <div class="output-title">File Stream Output</div>
+                <div id="indicator-path" class="output-indicator"></div>
+              </div>
+              <div class="output-content">
+                <div id="query-path-run" class="query-display">File path: Waiting...</div>
+                <pre id="output-path" style="white-space: pre-wrap; font-size: 0.8rem;">No file loaded.</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card code-comparison-card">
+          <h2>Code Comparison</h2>
+          <p class="description">Resolving base boundaries to prevent parent relative traversal path mappings.</p>
+          <div class="comparison-grid">
+            <div class="code-box">
+              <div class="code-box-header vuln">🚨 Vulnerable Code (FS Reader)</div>
+              <pre>app.get('/api/path/vuln', (req, res) => {
+  const filename = req.query.filename || 'system.log';
+  // Standard concatenation without path validation checks
+  const filepath = path.join(logsDir, filename);
+
+  fs.readFile(filepath, 'utf8', (err, data) => {
+    res.json({ filename, content: data, filepath });
+  });
+});</pre>
+            </div>
+            <div class="code-box">
+              <div class="code-box-header secure">🛡️ Secure Code (Path Resolution Check)</div>
+              <pre>app.get('/api/path/secure', (req, res) => {
+  const filename = req.query.filename || 'system.log';
+  
+  // 1. Resolve safe absolute paths
+  const safeBase = path.resolve(logsDir);
+  const candidatePath = path.resolve(path.join(logsDir, filename));
+  
+  // 2. Reject if final resolved path exits safe boundary
+  if (!candidatePath.startsWith(safeBase)) {
+    return res.status(403).json({ error: 'Access Denied' });
+  }
+
+  fs.readFile(candidatePath, 'utf8', (err, data) => {
+    res.json({ filename, content: data });
+  });
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 5. Dependency Prototype Pollution Section -->
+      <!-- ========================================== -->
+      <div id="tab-dep" class="tab-content">
+        <div class="card">
+          <span id="badge-dep" class="vuln-badge vuln">Vulnerable</span>
+          <h2>Dependency Prototype Pollution (lodash)</h2>
+          <p class="description">
+            Prototype Pollution occurs when a library (such as outdated <code>lodash &lt;= 4.17.19</code>) merges user-provided objects into target templates without stripping internal javascript constructor references. Attackers can pollute <code>Object.prototype</code>, injecting malicious parameters globally.
+          </p>
+
+          <div class="interactive-panel">
+            <div class="input-panel">
+              <div class="form-group">
+                <label class="form-label" for="dep-input">JSON Merge Payload</label>
+                <textarea id="dep-input" class="form-input" style="font-family: monospace; min-height: 120px; font-size: 0.85rem;" placeholder='{"__proto__": {"polluted": "YES_VULN_SUCCESS"}}'>{"__proto__": {"polluted": "YES_VULN_SUCCESS"}}</textarea>
+              </div>
+              <button class="btn btn-primary" onclick="runDep()">Run Merge Payload</button>
+
+              <div class="hints-container">
+                <div class="hint-title">💡 Exploit Payload Hints</div>
+                <div class="hint-text">
+                  Specify <code>"__proto__"</code> properties inside the JSON payload:
+                  <br><code>{ "__proto__": { "polluted": "PROTOTYPE_POLLUTION_WORKING" } }</code>
+                  <br><br>
+                  This injects the key into every newly instantiated object context on the server runtime.
+                </div>
+              </div>
+            </div>
+
+            <div class="output-panel">
+              <div class="output-header">
+                <div class="output-title">Server Object Prototype State</div>
+                <div id="indicator-dep" class="output-indicator"></div>
+              </div>
+              <div class="output-content">
+                <div id="query-dep-run" class="query-display">Endpoint: /api/dep/vuln</div>
+                <pre id="output-dep" style="white-space: pre-wrap; font-size: 0.85rem;">Ready to run merge payload...</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card code-comparison-card">
+          <h2>Code Comparison</h2>
+          <p class="description">Reviewing the recursive merge routines: Vulnerable lodash vs Safe merge routines.</p>
+          <div class="comparison-grid">
+            <div class="code-box">
+              <div class="code-box-header vuln">🚨 Vulnerable Code (Outdated Lodash 4.17.19)</div>
+              <pre>app.post('/api/dep/vuln', (req, res) => {
+  const parsed = JSON.parse(req.body.payload);
+  const targetObj = {};
+  
+  // Vulnerable merge copies __proto__ properties
+  lodash.merge(targetObj, parsed);
+
+  res.json({
+    isPolluted: !!({}).polluted,
+    targetObject: targetObj
+  });
+});</pre>
+            </div>
+            <div class="code-box">
+              <div class="code-box-header secure">🛡️ Secure Code (Key Block Sanitization)</div>
+              <pre>app.post('/api/dep/secure', (req, res) => {
+  const parsed = JSON.parse(req.body.payload);
+  const targetObj = {};
+
+  // Custom merge routine blocks prototype pollution
+  const safeMerge = (target, source) => {
+    for (const key in source) {
+      if (key === '__proto__' || key === 'constructor') {
+        continue; // Block injection path
+      }
+      if (typeof source[key] === 'object' && source[key] !== null) {
+        if (!target[key]) target[key] = {};
+        safeMerge(target[key], source[key]);
+      } else {
+        target[key] = source[key];
+      }
+    }
+  };
+  
+  safeMerge(targetObj, parsed);
+  res.json({
+    isPolluted: !!({}).polluted,
+    targetObject: targetObj
+  });
+});</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    <p>VulnShield Sandbox • Strictly for Educational and Demonstration Purposes • Powered by Node.js, Express & SQLite</p>
+  </footer>
+
+  <!-- Script logic -->
+  <script>
+    let currentMode = 'vuln'; // default to vulnerable mode
+
+    function setProtectionMode(mode) {
+      currentMode = mode;
+      
+      const btnVuln = document.getElementById('btn-vuln-mode');
+      const btnSecure = document.getElementById('btn-secure-mode');
+
+      // Update Header Button Active States
+      if (mode === 'vuln') {
+        btnVuln.classList.add('active');
+        btnSecure.classList.remove('active');
+      } else {
+        btnVuln.classList.remove('active');
+        btnSecure.classList.add('active');
+      }
+
+      // Update View Badges for individual components
+      const badges = ['xss', 'sqli', 'cmd', 'path', 'dep'];
+      badges.forEach(b => {
+        const badge = document.getElementById(`badge-${b}`);
+        if (badge) {
+          if (mode === 'vuln') {
+            badge.className = 'vuln-badge vuln';
+            badge.innerText = 'Vulnerable';
+          } else {
+            badge.className = 'vuln-badge secure';
+            badge.innerText = 'Secure';
+          }
+        }
+      });
+      
+      // Flash output indicator colors
+      const indicators = ['xss', 'sqli', 'cmd', 'path', 'dep'];
+      indicators.forEach(ind => {
+        const el = document.getElementById(`indicator-${ind}`);
+        if (el) {
+          el.className = 'output-indicator active';
+        }
+      });
+    }
+
+    function switchTab(tabName) {
+      // Manage active nav buttons
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => item.classList.remove('active'));
+
+      // Find matching button to activate
+      const btn = Array.from(navItems).find(b => b.getAttribute('onclick').includes(tabName));
+      if (btn) btn.classList.add('active');
+
+      // Show/Hide section panels
+      const panels = document.querySelectorAll('.tab-content');
+      panels.forEach(p => p.classList.remove('active'));
+      
+      const targetPanel = document.getElementById(`tab-${tabName}`);
+      if (targetPanel) targetPanel.classList.add('active');
+    }
+
+    // ------------------------------------------------------------
+    // API Implementations
+    // ------------------------------------------------------------
+
+    async function runXss() {
+      const input = document.getElementById('xss-input').value;
+      const targetUrl = `/api/xss/${currentMode}?name=${encodeURIComponent(input)}`;
+      const indicator = document.getElementById('indicator-xss');
+      indicator.className = 'output-indicator active';
+
+      try {
+        const response = await fetch(targetUrl);
+        const data = await response.text();
+        
+        // Render raw HTML returned directly to demo browser script executions
+        const renderDiv = document.getElementById('output-xss-render');
+        
+        // Clear old contents to re-trigger javascript execution if standard scripts are loaded
+        renderDiv.innerHTML = '';
+        
+        // Wait briefly for element clears then inject the payload
+        setTimeout(() => {
+          renderDiv.innerHTML = data;
+          
+          // Special fallback code to manually execute <script> tags injected via innerHTML
+          // Browsers naturally do not execute script blocks injected via innerHTML for safety reasons.
+          const scripts = renderDiv.querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.text = script.innerText;
+            document.body.appendChild(newScript).parentNode.removeChild(newScript);
+          });
+        }, 100);
+
+      } catch (err) {
+        document.getElementById('output-xss-render').innerText = 'Connection Error: ' + err.message;
+      }
+    }
+
+    async function runSqli() {
+      const input = document.getElementById('sqli-input').value;
+      const targetUrl = `/api/sqli/${currentMode}?category=${encodeURIComponent(input)}`;
+      const queryDisplay = document.getElementById('query-sqli-run');
+      const tableDiv = document.getElementById('output-sqli-table');
+      const indicator = document.getElementById('indicator-sqli');
+      
+      indicator.className = 'output-indicator active';
+      queryDisplay.innerText = 'Querying database...';
+      tableDiv.innerText = 'Loading...';
+
+      try {
+        const response = await fetch(targetUrl);
+        const data = await response.json();
+        
+        queryDisplay.innerText = `SQL Query: ${data.query}`;
+
+        if (response.ok && data.results && data.results.length > 0) {
+          // Construct visual table for SQL results dynamic viewing
+          let tableHtml = '<table class="sql-table"><thead><tr>';
+          
+          // Build Headers based on fields of first row returned
+          const headers = Object.keys(data.results[0]);
+          headers.forEach(h => {
+            tableHtml += `<th>${h}</th>`;
+          });
+          tableHtml += '</tr></thead><tbody>';
+
+          // Build Rows
+          data.results.forEach(row => {
+            tableHtml += '<tr>';
+            headers.forEach(h => {
+              // Highlight flags if discovered
+              let val = row[h];
+              if (typeof val === 'string' && val.includes('FLAG{')) {
+                tableHtml += `<td><span style="color: var(--cyan-accent); font-weight: bold; text-shadow: 0 0 5px var(--cyan-accent);">${val}</span></td>`;
+              } else {
+                tableHtml += `<td>${val}</td>`;
+              }
+            });
+            tableHtml += '</tr>';
+          });
+          tableHtml += '</tbody></table>';
+          tableDiv.innerHTML = tableHtml;
+        } else if (data.error) {
+          tableDiv.innerHTML = `<span style="color: var(--danger-color); font-weight: bold;">Error:</span> ${data.error}`;
+        } else {
+          tableDiv.innerText = 'No records found matching criteria.';
+        }
+      } catch (err) {
+        tableDiv.innerText = 'Connection Error: ' + err.message;
+      }
+    }
+
+    async function runCmd() {
+      const input = document.getElementById('cmd-input').value;
+      const cmdDisplay = document.getElementById('query-cmd-run');
+      const outputText = document.getElementById('output-cmd');
+      const indicator = document.getElementById('indicator-cmd');
+
+      indicator.className = 'output-indicator active';
+      cmdDisplay.innerText = 'Invoking shell process...';
+      outputText.innerText = 'Executing ping operation. Please wait...';
+
+      try {
+        const response = await fetch(`/api/cmd/${currentMode}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ip: input })
+        });
+        
+        const data = await response.json();
+        cmdDisplay.innerText = `Command: ${data.command}`;
+        outputText.innerText = data.output;
+      } catch (err) {
+        outputText.innerText = 'Connection Error: ' + err.message;
+      }
+    }
+
+    async function runPath() {
+      const input = document.getElementById('path-input').value;
+      const targetUrl = `/api/path/${currentMode}?filename=${encodeURIComponent(input)}`;
+      const pathDisplay = document.getElementById('query-path-run');
+      const outputText = document.getElementById('output-path');
+      const indicator = document.getElementById('indicator-path');
+
+      indicator.className = 'output-indicator active';
+      pathDisplay.innerText = 'Resolving file stream...';
+      outputText.innerText = 'Accessing...';
+
+      try {
+        const response = await fetch(targetUrl);
+        const data = await response.json();
+        
+        if (response.ok) {
+          pathDisplay.innerText = `File Location: ${data.filepath}`;
+          
+          // Highlight flags if read successfully
+          if (data.content.includes('FLAG{')) {
+            outputText.innerHTML = `<span style="color: var(--success-color); font-weight: bold; font-size: 1.1rem; text-shadow: 0 0 10px rgba(0, 230, 118, 0.4);">${data.content}</span>`;
+          } else {
+            outputText.innerText = data.content;
+          }
+        } else {
+          pathDisplay.innerText = data.filepath ? `Resolved File Location: ${data.filepath}` : 'Failed Resolution';
+          outputText.innerHTML = `<span style="color: var(--danger-color); font-weight: bold;">Error:</span> ${data.error || 'Failed to read file.'}`;
+        }
+      } catch (err) {
+        outputText.innerText = 'Connection Error: ' + err.message;
+      }
+    }
+
+    async function runDep() {
+      const input = document.getElementById('dep-input').value;
+      const endpointDisplay = document.getElementById('query-dep-run');
+      const outputText = document.getElementById('output-dep');
+      const indicator = document.getElementById('indicator-dep');
+
+      indicator.className = 'output-indicator active';
+      endpointDisplay.innerText = `Endpoint: POST /api/dep/${currentMode}`;
+      outputText.innerText = 'Sending merge request...';
+
+      try {
+        // Validate input is valid JSON first on the client
+        JSON.parse(input);
+      } catch (e) {
+        outputText.innerHTML = `<span style="color: var(--danger-color); font-weight: bold;">Client Error:</span> Invalid JSON payload. Make sure properties and strings use double-quotes (").`;
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/dep/${currentMode}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payload: input })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          let outputHtml = `Message: ${data.message}\n`;
+          outputHtml += `Is Object.prototype Polluted: ${data.isPolluted ? '⚠️ YES' : '🔒 NO'}\n`;
+          outputHtml += `Object.prototype.polluted value: ${JSON.stringify(data.objectPrototypePollutedValue)}\n\n`;
+          outputHtml += `Target object merged result:\n${JSON.stringify(data.targetObject, null, 2)}`;
+          
+          if (data.isPolluted) {
+            outputText.innerHTML = `<span style="color: var(--danger-color); font-weight: bold;">${outputHtml}</span>`;
+          } else {
+            outputText.innerText = outputHtml;
+          }
+        } else {
+          outputText.innerHTML = `<span style="color: var(--danger-color); font-weight: bold;">Error:</span> ${data.error || 'Request failed.'}`;
+        }
+      } catch (err) {
+        outputText.innerText = 'Connection Error: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

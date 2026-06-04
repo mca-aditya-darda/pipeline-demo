@@ -1,0 +1,16 @@
+{
+  "name": "vulnshield-sandbox",
+  "version": "1.0.0",
+  "description": "Educational sandbox demonstrating web vulnerabilities and their remediations",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7",
+    "lodash": "4.17.19",
+    "minimist": "1.2.0"
+  },
+  "private": true
+}
